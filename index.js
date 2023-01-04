@@ -20,27 +20,22 @@ async function xlsxToArray(filename) {
 			records: worksheet.getSheetValues().slice(2, 12)
 				.map((row) => {
 					const cell = row.slice(2, 6)
-					let [teamA, , , teamB] = cell
-					const [, scoreA, scoreB] = cell
-					teamA = trim(teamA)
-					teamB = trim(teamB)
+					const [teamA, scoreA, scoreB, teamB] = cell
 					if (scoreA > scoreB) {
 						return {
-							winner: { team: teamA, score: scoreA },
-							loser: { team: teamB, score: scoreB },
-							isDeuce: scoreA > 21,
+							winner: { team: trim(teamA), score: scoreA },
+							loser: { team: trim(teamB), score: scoreB },
 						}
 					}
 					return {
-						winner: { team: teamB, score: scoreB },
-						loser: { team: teamA, score: scoreA },
-						isDeuce: scoreB > 21,
+						winner: { team: trim(teamB), score: scoreB },
+						loser: { team: trim(teamA), score: scoreA },
 					}
 				}),
 		}))
 }
 
-function newRecord(object, key, isWin, isDeuce, score, netScore) {
+function newRecord(object, key, isWin, winnerScore, loserScore) {
 	if (!object[key]) {
 		object[key] = { win: 0, lose: 0, score: 0, netScore: 0, total: 0, deuce: 0 }
 	}
@@ -49,13 +44,14 @@ function newRecord(object, key, isWin, isDeuce, score, netScore) {
 	} else {
 		object[key].lose += 1
 	}
-	object[key].score += score
+	object[key].score += isWin ? winnerScore : loserScore
+	const netScore = winnerScore - loserScore
 	if (isWin) {
 		object[key].netScore += netScore
 	} else {
 		object[key].netScore -= netScore
 	}
-	if (isDeuce) {
+	if (winnerScore > 21) {
 		object[key].deuce += 1
 	}
 	object[key].total += 1
@@ -66,14 +62,12 @@ function stats(dayRecords) {
 	const singles = {}
 
 	dayRecords.forEach((dayReocrd) => {
-		dayReocrd.records.forEach(({ winner, loser, isDeuce }) => {
-			const netScore = winner.score - loser.score
-
-			;[winner, loser].forEach(({ team, score }, index) => {
+		dayReocrd.records.forEach(({ winner, loser }) => {
+			[winner, loser].forEach(({ team }, index) => {
 				const isWin = index === 0
-				newRecord(doubles, team, isWin, isDeuce, score, netScore)
+				newRecord(doubles, team, isWin, winner.score, loser.score)
 				team.split('').forEach((parter) => {
-					newRecord(singles, parter, isWin, isDeuce, score, netScore)
+					newRecord(singles, parter, isWin, winner.score, loser.score)
 				})
 			})
 		})
@@ -90,7 +84,7 @@ async function parse(filename) {
 	dayRecords.forEach((dayRecord) => {
 		console.log(`-------------------${dayRecord.name} Start-------------------`)
 		dayRecord.records.forEach((record) => {
-			console.log('%j', record)
+			console.log(record)
 		})
 		console.log(`-------------------${dayRecord.name} End-------------------`)
 	})
@@ -106,7 +100,8 @@ async function parse(filename) {
 				}
 				return statsObject[keys][keyB].win - statsObject[keys][keyA].win
 			}).forEach((key) => {
-				console.log('%s %s', key, statsObject[keys][key])
+				const r = statsObject[keys][key]
+				console.log(key, r, `${Math.floor((r.win / r.total) * 10000) / 100}%`)
 			})
 		console.log('-------------------------------------')
 	})
