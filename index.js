@@ -28,11 +28,13 @@ async function xlsxToArray(filename) {
 						return {
 							winner: { team: teamA, score: scoreA },
 							loser: { team: teamB, score: scoreB },
+							isDeuce: scoreA > 21,
 						}
 					}
 					return {
 						winner: { team: teamB, score: scoreB },
 						loser: { team: teamA, score: scoreA },
+						isDeuce: scoreB > 21,
 					}
 				}),
 		}))
@@ -47,39 +49,44 @@ function stats(dayRecords) {
 			const winTeam = record.winner.team
 			const loseTeam = record.loser.team
 			const netScore = record.winner.score - record.loser.score
+			const { isDeuce } = record
 
 			if (!doubles[winTeam]) {
-				doubles[winTeam] = { win: 0, lose: 0, score: 0, netScore: 0, total: 0 }
+				doubles[winTeam] = { win: 0, lose: 0, score: 0, netScore: 0, total: 0, deuce: 0 }
 			}
 			doubles[winTeam].win += 1
 			doubles[winTeam].score += record.winner.score
 			doubles[winTeam].netScore += netScore
+			doubles[winTeam].deuce += isDeuce ? 1 : 0
 			doubles[winTeam].total += 1
 
 			if (!doubles[loseTeam]) {
-				doubles[loseTeam] = { win: 0, lose: 0, score: 0, netScore: 0, total: 0 }
+				doubles[loseTeam] = { win: 0, lose: 0, score: 0, netScore: 0, total: 0, deuce: 0 }
 			}
 			doubles[loseTeam].lose += 1
 			doubles[loseTeam].score += record.loser.score
 			doubles[loseTeam].netScore -= netScore
+			doubles[loseTeam].deuce += isDeuce ? 1 : 0
 			doubles[loseTeam].total += 1
 
 			winTeam.split('').forEach((winner) => {
 				if (!singles[winner]) {
-					singles[winner] = { win: 0, lose: 0, score: 0, netScore: 0, total: 0 }
+					singles[winner] = { win: 0, lose: 0, score: 0, netScore: 0, total: 0, deuce: 0 }
 				}
 				singles[winner].win += 1
 				singles[winner].score += record.winner.score
 				singles[winner].netScore += netScore
+				singles[winner].deuce += isDeuce ? 1 : 0
 				singles[winner].total += 1
 			})
 			loseTeam.split('').forEach((loser) => {
 				if (!singles[loser]) {
-					singles[loser] = { win: 0, lose: 0, score: 0, netScore: 0, total: 0 }
+					singles[loser] = { win: 0, lose: 0, score: 0, netScore: 0, total: 0, deuce: 0 }
 				}
 				singles[loser].lose += 1
 				singles[loser].score += record.loser.score
 				singles[loser].netScore -= netScore
+				singles[loser].deuce += isDeuce ? 1 : 0
 				singles[loser].total += 1
 			})
 		})
@@ -101,8 +108,11 @@ async function parse(filename) {
 		console.log(`-------------------${dayRecord.name} End-------------------`)
 	})
 
+	console.log('-------------------------------------')
 	const statsObject = stats(dayRecords)
-	console.log(statsObject)
+	console.table(statsObject.doubles)
+	console.table(statsObject.singles)
+	console.log('-------------------------------------')
 }
 
 parse(path.join(__dirname, './source/202210-202212/index.xlsx'))
