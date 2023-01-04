@@ -40,54 +40,41 @@ async function xlsxToArray(filename) {
 		}))
 }
 
+function newRecord(object, key, isWin, isDeuce, score, netScore) {
+	if (!object[key]) {
+		object[key] = { win: 0, lose: 0, score: 0, netScore: 0, total: 0, deuce: 0 }
+	}
+	if (isWin) {
+		object[key].win += 1
+	} else {
+		object[key].lose += 1
+	}
+	object[key].score += score
+	if (isWin) {
+		object[key].netScore += netScore
+	} else {
+		object[key].netScore -= netScore
+	}
+	if (isDeuce) {
+		object[key].deuce += 1
+	}
+	object[key].total += 1
+}
+
 function stats(dayRecords) {
 	const doubles = {}
 	const singles = {}
 
 	dayRecords.forEach((dayReocrd) => {
-		dayReocrd.records.forEach((record) => {
-			const winTeam = record.winner.team
-			const loseTeam = record.loser.team
-			const netScore = record.winner.score - record.loser.score
-			const { isDeuce } = record
+		dayReocrd.records.forEach(({ winner, loser, isDeuce }) => {
+			const netScore = winner.score - loser.score
 
-			if (!doubles[winTeam]) {
-				doubles[winTeam] = { win: 0, lose: 0, score: 0, netScore: 0, total: 0, deuce: 0 }
-			}
-			doubles[winTeam].win += 1
-			doubles[winTeam].score += record.winner.score
-			doubles[winTeam].netScore += netScore
-			doubles[winTeam].deuce += isDeuce ? 1 : 0
-			doubles[winTeam].total += 1
-
-			if (!doubles[loseTeam]) {
-				doubles[loseTeam] = { win: 0, lose: 0, score: 0, netScore: 0, total: 0, deuce: 0 }
-			}
-			doubles[loseTeam].lose += 1
-			doubles[loseTeam].score += record.loser.score
-			doubles[loseTeam].netScore -= netScore
-			doubles[loseTeam].deuce += isDeuce ? 1 : 0
-			doubles[loseTeam].total += 1
-
-			winTeam.split('').forEach((winner) => {
-				if (!singles[winner]) {
-					singles[winner] = { win: 0, lose: 0, score: 0, netScore: 0, total: 0, deuce: 0 }
-				}
-				singles[winner].win += 1
-				singles[winner].score += record.winner.score
-				singles[winner].netScore += netScore
-				singles[winner].deuce += isDeuce ? 1 : 0
-				singles[winner].total += 1
-			})
-			loseTeam.split('').forEach((loser) => {
-				if (!singles[loser]) {
-					singles[loser] = { win: 0, lose: 0, score: 0, netScore: 0, total: 0, deuce: 0 }
-				}
-				singles[loser].lose += 1
-				singles[loser].score += record.loser.score
-				singles[loser].netScore -= netScore
-				singles[loser].deuce += isDeuce ? 1 : 0
-				singles[loser].total += 1
+			;[winner, loser].forEach(({ team, score }, index) => {
+				const isWin = index === 0
+				newRecord(doubles, team, isWin, isDeuce, score, netScore)
+				team.split('').forEach((parter) => {
+					newRecord(singles, parter, isWin, isDeuce, score, netScore)
+				})
 			})
 		})
 	})
