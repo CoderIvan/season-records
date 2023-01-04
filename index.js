@@ -103,15 +103,26 @@ async function parse(filename) {
 	dayRecords.forEach((dayRecord) => {
 		console.log(`-------------------${dayRecord.name} Start-------------------`)
 		dayRecord.records.forEach((record) => {
-			console.log(record)
+			console.log('%j', record)
 		})
 		console.log(`-------------------${dayRecord.name} End-------------------`)
 	})
 
 	console.log('-------------------------------------')
 	const statsObject = stats(dayRecords)
-	console.table(statsObject.doubles)
-	console.table(statsObject.singles)
+	;['doubles', 'singles'].forEach((keys) => {
+		Object
+			.keys(statsObject[keys])
+			.sort((keyA, keyB) => {
+				if (statsObject[keys][keyB].win === statsObject[keys][keyA].win) {
+					return statsObject[keys][keyB].netScore - statsObject[keys][keyA].netScore
+				}
+				return statsObject[keys][keyB].win - statsObject[keys][keyA].win
+			}).forEach((key) => {
+				console.log('%s %s', key, statsObject[keys][key])
+			})
+		console.log('-------------------------------------')
+	})
 	console.log('-------------------------------------')
 }
 
